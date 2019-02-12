@@ -1,0 +1,16 @@
+jab
+cross
+front hook
+back hook
+front uppercut
+back uppercut
+front elbow
+back elbow
+front knee
+back knee
+front kick
+back kick
+push kick
+front side kick
+back side kick
+switch kick
