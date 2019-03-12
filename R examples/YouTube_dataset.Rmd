@@ -1,0 +1,177 @@
+---
+title: "Unit 12 HW"
+author: "Alex West, W203 section 0904"
+date: "11/23/2018"
+output:
+  html_document:
+    df_print: paged
+header includes:
+- \usepackage{graphicx}
+- \usepackage[english]{babel}
+- \usepackage{amsmath}
+- \usepackage{amssymb}
+- \numberwithin{equation}{subsection}
+- \usepackage{hyperref}
+---
+
+```{r}
+# load all libraries needed in this analysis
+library(car)
+library(lmtest)
+library(sandwich)
+library(stargazer)
+
+# read in data and examine first few rows
+Data = read.table("videos.txt", sep="\t", header=T)
+head(Data)
+```
+### 1.0 Conduct a short EDA on the data set espcially focusing on `views`, `rate`, and `length`
+
+```{r}
+# conduct a summary of the data,
+# and determine data types of each variable
+summary(Data)
+str(Data)
+```
+
+The dataset seems to have nine rows with NA values. Are they the same 9 rows for each variable?
+
+```{r}
+na.rows <- lapply(Data, function(x){which(is.na(x))})
+na.rows
+```
+
+They are the same rows for each variable. For this analysis, I will remove the NA rows to clean up the dataset:
+
+```{r}
+Data = na.omit(Data)
+```
+
+Variables `length` and `views` are integers, while `rate` is a numerical variable. This should not present a problem in the analysis.
+
+To examine our target variables further, let's look at histograms of all of them.
+
+```{r}
+# Create histograms of dependent and independent 
+# variables.
+hist(Data$length, main = "histogram of length")
+hist(Data$views, main = "histogram of views")
+hist(Data$rate, main = "histogram of rate")
+```
+
+Both `length` and `views` are severely rightly skewed, and may be candidates for log transformations. In addition, there may be some real outliers in both variables. 
+
+`Rate` is left skewed, but has a more even distribution of data points. Interestingly the most common rating is 5 - does this indicate an unbiased rating system? Difficult to say.
+
+```{r}
+# Histograms of log transformed variables
+hist(log(Data$length), main = "histogram of log length")
+hist(log(Data$views), main = "histogram of log views")
+hist(log(Data$rate), main = "histogram of log rate")
+```
+
+Log transforming both `length` and `views` does a lot to help with skewness. Transforming `rate`, however, does not seem to affect skewness. At this point I will leave it in its original form. 
+
+### 2.0 Fit a linear model predicting the number of views (views), from the length of a video (length) and its average user rating (rate).
+
+```{r}
+#create a linear model and summarize it
+model1 = lm(log(views) ~ log(length) + rate, data = Data)
+summary(model1)
+```
+
+### 3.0 Using diagnostic plots, background knowledge, and statistical tests, assess all 6 assumptions of the CLM.  When an assumption is violated, state what response you will take.
+
+The first three assumptions can be evaluated without statistical tests.
+
+#### Assumption 1: Linear in Parameters
+The true relationship between our explanatory variables and the number of views is linear (not parabolic, or exponential, or any other shape). In order for the ordinary linear regression analysis to be valid, I am assuming this to be true.
+
+#### Assumption 2: Random Sampling
+This assumption is that the sample is independent and identically distributed, meaning that each data point is independent and does not affect any other data points (one draw does not affect any other draws). Given that each row in the dataset is a discrete video, you could make the case that this assumption is valid. However, many videos are connected to one another (for video series, or linked videos, etc). Therefore, I can reasonably expect that there might be clusters in the data where certain videos are connected to one another and viewing one video affects the probability of viewing another video. Therefore, this analysis clearly fails the independence assumption. In order to correct for this, clustered standard errors (and robust standard errors) will be used in the model.
+
+#### Assumption 3: No Perfect Collinearity
+I am assuming that there is no exact linear relationship among the independent variables. In other words, the variable measuring views is not also measuring length or rate. the R regression function, lm(), automatically checks for perfect collinearity and will return a warning specifying a rank-deficient matrix should this be the situation with the data.
+
+Assumptions 4-6 can be evaluated using tests within R. 
+
+#### Assumption 4: Zero Conditional Mean
+This assumption asserts that there is no functional relationship between our explanatory variables (length and rate) and the error term, u. This can be examined using the diagnostic plots in R.
+
+```{r}
+#Create Residuals vs Fitted plot
+plot(model1, which = 1)
+```
+
+The residuals fluctuate around 0, with data points scattered thickly and maybe some outliers at the top end. Zero conditional mean is therefore approximately satisfied, or we can say that we've met a weaker assumption: exogeneity.
+
+#### Assumption 5: Homoskedasticity
+This assumption asserts that the variance of the error term does not depend on the levels of the explanatory variables. In other words, the variance in the error term, u, conditional on any of our explanatory variables, is the same for all combinations of outcomes. This can be tested with a scale - location plot. This plot shows if residuals are spread equally along the ranges of predictors. This is how you can check the assumption of equal variance (homoskedasticity). It’s good if you see a horizontal line with equally (randomly) spread points.
+
+```{r}
+# Create scale-location plot
+plot(model1, which = 3)
+```
+
+Here we do see a (basically) horizontal line with some uptick at the end. The points, however, are not equally distributed. It may make sense to run a Breusch-Pagan test to check for heteroskedasticity:
+
+```{r}
+# Run Breusch-Pagan test
+bptest(model1)
+```
+
+With a p-value of <0.05, the null hypothesis (that homoskedasticity is present) is rejected and therefore there is some evidence that heteroskedasticity is present. It is useful to remember here that for a few hundred data points or more, almost any amount of heteroskedasticity will appear as a significant test. Our $n$ is over 9,000 so we may be overestimating the effect of heteroskedasticity in this case. It will be interesting to test for the normality assumption, if it holds, we can accept the assumption of homoskedasticity as well. 
+
+#### Assumption 6: Normality of the Error term
+This assumption asserts that the error is independent of the explanatory variables and is normally distributed. This assumption is much stronger than the previous assumptions, and if true, automatically includes assumptions 4 and 5. 
+
+For normality of errors, we can examine the residuals directly:
+```{r}
+# Create histogram of residuals
+hist(model1$residuals, breaks = 50)
+```
+
+These residuals seem normally distributed given their histogram. However, this is not exact evidence that the error is normally distributed.
+
+We can look at the Q-Q Plot - for normally distributed errors we would expect to see a perfect diagonal line, the more it deviates from the diagonal, the less normal the residuals. 
+
+```{r}
+plot(model1, which = 2)
+```
+
+The Q-Q plot looks good, the points are very close to the diagonal, only deviating slightly at the beginning and the end. This shows evidence that the error is normally distributed. 
+
+We cannot run a Shapiro-Wilk test in this case because our sample size is greater than 5000.
+
+The normality assumption looks valid, in which case we can accept both assumptions of homoskedasticity and zero conditional mean.
+
+### 4.0 Generate a printout of your model coefficients, complete with standard errors that are valid given your diagnostics.  Comment on both the practical and statistical significance of your coefficients.
+
+```{r}
+# We need the vectors of robust standard errors.
+# We can get these from the coeftest output
+# which we store in a variable that is used in the 
+# making of a coefficient table.
+
+(se.model1 = coeftest(model1, vcov = vcovHC)[ , "Std. Error"])
+
+# We pass the standard errors into stargazer through 
+# the se argument and omit f statistic, which is 
+# not robust to heteroskedasticity.
+# Stargazer by default uses p values that are higher, cutoffs
+# tell stargazer that p values need to be lower
+
+stargazer(model1, type = "text", omit.stat = "f",
+          se = list(se.model1),
+          star.cutoffs = c(0.05, 0.01, 0.001))
+
+```
+
+Based on the results:
+
+- An increase in the log(length) of a video will result in 10% more views of that video
+
+- An increase in the rating by 1 results in 47% more views of that video
+
+The model has high statistical significance, with p values below 0.001 for all coefficients. However,  the $R^2$ value is 0.189, meaning this model does not have great goodness-of-fit. Only approximately 19% of the variation in number of views is "explained" by our input variables `length` and `rate`. Practically, this means there are lots of other factors to consider to predict how many views a video on YouTube will get.
+
