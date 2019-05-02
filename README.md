@@ -9,4 +9,5 @@ Coursework completed:
 - Python Fundamentals 
 - Research Design and Data Analysis
 - Statistics for Data Science
-- Fundamentals of Data Engineering (in progress)
+- Fundamentals of Data Engineering
+- Applied Machine Learning (in progress)
