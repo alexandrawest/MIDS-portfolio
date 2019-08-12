@@ -10,4 +10,5 @@ Coursework completed:
 - Research Design and Data Analysis
 - Statistics for Data Science
 - Fundamentals of Data Engineering
-- Applied Machine Learning (in progress)
+- Applied Machine Learning 
+- Experiments and Causal Inference (in progress)
