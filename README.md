@@ -3,12 +3,15 @@
 Alexandra West
 alexandralaurenwest@gmail.com
 
-Masters in Information and Data Science (MIDS) in progress (expected 2020)
+Masters in Information and Data Science (MIDS) in progress (expected Dec 2020)
 
-Coursework completed:
-- Python Fundamentals 
-- Research Design and Data Analysis
-- Statistics for Data Science
-- Fundamentals of Data Engineering
-- Applied Machine Learning 
+Coursework:
+- Python Fundamentals (completed)
+- Research Design and Data Analysis (completed)
+- Statistics for Data Science (completed)
+- Fundamentals of Data Engineering (completed)
+- Applied Machine Learning (completed)
 - Experiments and Causal Inference (in progress)
+- Machine Learning at Scale (planned)
+- Natural Language Processing with Deep Learning (planned)
+- Capstone Project (planned)
