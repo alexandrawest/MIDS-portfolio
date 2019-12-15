@@ -1,0 +1,577 @@
+---
+title: "W241 Final Project | Decoding Game of Thrones"
+subtitle: "The Effect of Gender Identity on Learning Outcomes"
+author: "Alex West, Anna Jacobson, and Apik Zorian"
+date: "12/10/19"
+output: 
+    pdf_document: default
+knit: (function(inputFile, encoding) {
+  rmarkdown::render(
+    inputFile, encoding = encoding,
+    output_format = c('pdf_document')) 
+    })
+---
+
+
+```{r message=FALSE, include=FALSE, results='hide'}
+# load packages 
+library(data.table)
+library(foreign)
+library(lmtest)
+library(sandwich)
+library(data.table)
+library(stargazer)
+library(ggplot2)
+library(dplyr)
+library(Hmisc)
+library(knitr)
+library(pwr)
+library(stringr)
+```
+
+```{r Functions, include=FALSE}
+
+# calculate effect size
+effect <- function(g1,g2) {
+  effect_size <- ((mean(g1)-mean(g2))/(sd(c(g1, g2))))
+  return(effect_size)
+}
+
+# calculate robust standard errors
+rse <- function(m) {
+  m$vcovHC_ <- vcovHC(m)
+  robust_standard_error <- sqrt(diag(m$vcovHC_))
+  return(robust_standard_error)
+}
+
+# output two-model regression table using robust standard errors
+reg_rse_2 <- function (m1, m2, name) {
+    stargazer(m1, m2,
+          type = "latex",
+          se = list(rse(m1),rse(m2)),
+          add.lines = list(
+            c('Type of Std. Error', 'Robust', 'Robust')
+          ),
+          header = F,
+          title = name,
+          digits = 3)
+}
+
+# output three-model regression table using robust standard errors
+reg_rse_3 <- function (m1, m2, m3, name) {
+    stargazer(m1, m2, m3,
+          type = "latex",
+          se = list(rse(m1),rse(m2),rse(m3)),
+          add.lines = list(
+            c('Type of Std. Error', 'Robust', 'Robust', 'Robust')
+          ),
+          header = F,
+          title = name,
+          digits = 3)
+}
+
+# output four-model regression table using robust standard errors
+reg_rse_4 <- function (m1, m2, m3, m4, name) {
+    stargazer(m1, m2, m3, m4,
+          type = "latex",
+          se = list(rse(m1),rse(m2),rse(m3),rse(m4)),
+          add.lines = list(
+            c('Type of Std. Error', 'Robust', 'Robust', 'Robust', 'Robust')
+          ),
+          header = F,
+          title = name,
+          digits = 3)
+}
+
+# output five-model regression table using robust standard errors
+reg_rse_5 <- function (m1, m2, m3, m4, m5, name) {
+    stargazer(m1, m2, m3, m4, m5,
+          type = "latex",
+          se = list(rse(m1),rse(m2),rse(m3),rse(m4),rse(m5)),
+          add.lines = list(
+            c('Type of Std. Error', 'Robust', 'Robust', 'Robust', 'Robust', 'Robust')
+          ),
+          header = F,
+          title = name,
+          omit.stat=c("f", "ser"),
+          digits = 3,
+          font.size = "small",
+          column.sep.width = "-5pt")
+}
+
+```
+
+```{r Initial Data Loading, include=FALSE}
+e1 <- fread("./Data_Clean_PhI_191123_09.48.csv")
+e2 <- fread("./Data_Clean_PhII_191125_18.16.csv")
+dim(e1)
+dim(e2)
+``` 
+
+##3.1.4 | Experiment Design 1: Two-Group Model  
+
+###Individual Values Plot
+
+```{r fig.height=4}
+ED1_IVP <- ggplot(e1, aes(x = as.factor(Same_Gen), y = Total_Scaled)) +
+  geom_boxplot(color="black", fill="gray", position=position_dodge(1)) + 
+  stat_boxplot(geom ='errorbar') +
+  geom_jitter(aes(x = as.factor(Same_Gen), y = Total_Scaled, fill=as.factor(G_s)), 
+                size=3, color="black", pch=21, position=position_jitter(0.1)) +
+  scale_x_discrete(labels= c("Same-Gender Instructor", "Opposite-Gender Instructor")) +
+  labs(title = "Experiment Design 1: Two-Group", subtitle = "All Subjects") +
+  labs(y = "Total Phase I Score (Scaled)", x = "Treatment Condition") + 
+  scale_fill_discrete(name = "Student Gender", labels = c("Female", "Male"))
+
+ggsave(filename="ED1_IVP.png", plot=ED1_IVP, width = 7, height = 4, units = "in")
+```
+
+### Hypothesis Testing
+
+```{r}
+#calculate group distributions
+same_gender_group <- e1[Same_Gen == 0, Total_Scaled, ]
+mixed_gender_group <- e1[Same_Gen == 1, Total_Scaled, ]
+```
+
+```{r}
+t.test(same_gender_group, mixed_gender_group)
+pwr.t2n.test(n1=length(same_gender_group), n2=length(mixed_gender_group), d=effect(same_gender_group,mixed_gender_group))
+```
+
+##3.1.5 | Experiment Design 2: Four-Group Model
+
+###Individual Values Plot
+
+```{r}
+ED2_IVP <- ggplot(e1, aes(x = as.factor(PA_2), y = Total_Scaled)) + 
+  geom_boxplot(color="black", fill="gray", position=position_dodge(1)) + 
+  stat_boxplot(geom ='errorbar') +
+  geom_jitter(aes(x = as.factor(PA_2), y = Total_Scaled, fill=as.factor(G_s)), 
+              size=3, color="black", pch=21, position=position_jitter(0.1)) +
+  scale_x_discrete(labels= c("FF", "FM", "MF", "MM")) +
+  labs(title = "Experiment Design 2: Four-Group", subtitle = "All Subjects") + 
+  labs (y = "Total Phase I Score (Scaled)", 
+        x = "Treatment Condition") + 
+  scale_fill_discrete(name = "Student Gender", labels = c("Female", "Male"))
+
+ggsave(filename="ED2_IVP.png", plot=ED2_IVP, width = 7, height = 4, units = "in")
+```
+
+### Hypothesis Testing
+
+```{r}
+#calculate group distributions
+FF_group <- e1[FF == 1, Total_Scaled, ]
+FM_group <- e1[FM == 1, Total_Scaled, ]
+MF_group <- e1[MF == 1, Total_Scaled, ]
+MM_group <- e1[MM == 1, Total_Scaled, ]
+```
+
+```{r}
+t.test(FF_group, FM_group, paired = TRUE, alternative = "two.sided")
+pwr.t.test(n=length(FF_group), d=effect(FF_group, FM_group), type = "paired")
+```
+
+```{r}
+t.test(MF_group, MM_group, paired = TRUE, alternative = "two.sided")
+pwr.t.test(n=length(MF_group), d=effect(MF_group, MM_group), type = "paired")
+```
+
+
+##3.1.6 | Experiment Design 3: Eight-Group Model
+
+###Individual Values Plot
+
+```{r fig.height=4}
+ED3_IVP <- ggplot(e1, aes(x = as.factor(PA_3), y = Total_Scaled)) + 
+  geom_boxplot(color="black", fill="gray", position=position_dodge(1)) + 
+  stat_boxplot(geom ='errorbar') +
+  geom_jitter(aes(x = as.factor(PA_3), y = Total_Scaled, 
+                  fill=as.factor(G_s)), size=3, color="black", pch=21, 
+              position=position_jitter(0.1)) +
+  scale_x_discrete(labels= c("FFA", "FMB","FMA", "FFB", "MFA", "MMB","MMA", "MFB")) +
+  labs(title = "Experiment Design 3: Eight-Group", subtitle = "All Subjects") + 
+  labs (y = "Total Phase I Score (Scaled)", 
+        x = "Treatment Condition") + 
+  scale_fill_discrete(name = "Student Gender", labels = c("Female", "Male"))
+
+ggsave(filename="ED3_IVP.png", plot=ED3_IVP, width = 7, height = 4, units = "in")
+```
+
+### Hypothesis Testing
+
+```{r}
+#calculate group distributions
+FFA_group <- e1[FFA == 1, Total_Scaled, ]
+FMB_group <- e1[FMB == 1, Total_Scaled, ]
+FMA_group <- e1[FMA == 1, Total_Scaled, ]
+FFB_group <- e1[FFB == 1, Total_Scaled, ]
+MFA_group <- e1[MFA == 1, Total_Scaled, ]
+MMB_group <- e1[MMB == 1, Total_Scaled, ]
+MMA_group <- e1[MMA == 1, Total_Scaled, ]
+MFB_group <- e1[MFB == 1, Total_Scaled, ]
+Not_FFA_group <- e1[FFA != 1, Total_Scaled, ]
+```
+
+```{r}
+t.test(FFA_group, FMB_group, paired = TRUE, alternative = "two.sided")
+pwr.t.test(n=length(FFA_group), d=effect(FFA_group,FMB_group), type = "paired")
+```
+
+```{r}
+t.test(FMA_group, FFB_group, paired = TRUE, alternative = "two.sided")
+pwr.t.test(n=length(FMA_group), d=effect(FMA_group,FFB_group), type = "paired")
+```
+
+```{r}
+t.test(MFA_group, MMB_group, paired = TRUE, alternative = "two.sided")
+pwr.t.test(n=length(MFA_group), d=effect(MFA_group,MMB_group), type = "paired")
+```
+
+```{r}
+t.test(MMA_group, MFB_group, paired = TRUE, alternative = "two.sided")
+pwr.t.test(n=length(MMA_group), d=effect(MMA_group,MFB_group), type = "paired")
+```
+
+
+```{r}
+t.test(FFA_group, Not_FFA_group)
+pwr.t2n.test(n1=length(FFA_group), n2=length(Not_FFA_group), d=effect(FFA_group,Not_FFA_group))
+```
+
+### Regression Analysis
+
+```{r, results='asis'}
+# fit regression models
+m3c1 <- lm(Total_Scaled ~ FFA + FMB + FMA + FFB + MFA + MMB + MMA, data = e1)
+m3c2 <- lm(Total_Scaled ~ FFA + FMB + FMA + FFB + MFA + MMB + MMA + IFE_Scaled, data = e1)
+
+# output results
+reg_rse_2(m3c1, m3c2, "Experiment Design 3: Eight-Group Models")
+```
+
+```{r, results='asis'}
+# fit regression models
+m3f1 <- lm(Total_Scaled ~ FFA, data = e1)
+m3f2 <- lm(Total_Scaled ~ FFA + IFE_Scaled, data = e1)
+
+# output results
+reg_rse_2(m3f1, m3f2, "Experiment Design 3: Female Students/Female Instructor/Video A")
+```
+
+##4.1 | Secondary Analyses 
+
+### Student Subgroup
+
+```{r}
+# create student subset 
+e_student <- subset(e1, e == 1)
+dim(e_student)
+```
+
+```{r, results='asis'}
+# fit regression models
+m4a1 <- lm(Total_Scaled ~ FFA + FMB + FMA + FFB + MFA + MMB + MMA, data = e_student)
+m4a2 <- lm(Total_Scaled ~ FFA + FMB + FMA + FFB + MFA + MMB + MMA + IFE_Scaled, data = e_student)
+m4a3 <- lm(Total_Perf ~ FFA + FMB + FMA + FFB + MFA + MMB + MMA, data = e_student)
+```
+
+### Under 30 Subgroup
+
+```{r}
+# create under 30 subset 
+e_young <- subset(e1, b == 1 | b == 2)
+dim(e_young)
+```
+
+```{r, results='asis'}
+# fit regression models
+m4b1 <- lm(Total_Scaled ~ FFA + FMB + FMA + FFB + MFA + MMB + MMA, data = e_young)
+m4b2 <- lm(Total_Scaled ~ FFA + FMB + FMA + FFB + MFA + MMB + MMA + IFE_Scaled, data = e_young)
+m4b3 <- lm(Total_Perf ~ FFA + FMB + FMA + FFB + MFA + MMB + MMA, data = e_young)
+```
+
+### Over 30 Subgroup
+
+```{r}
+# create over 30 subset 
+e_old <- subset(e1, b == 3 | b == 4 | b == 5)
+dim(e_old)
+```
+
+```{r, results='asis'}
+# fit regression models
+m4c1 <- lm(Total_Scaled ~ FFA + FMB + FMA + FFB + MFA + MMB + MMA, data = e_old)
+m4c2 <- lm(Total_Scaled ~ FFA + FMB + FMA + FFB + MFA + MMB + MMA + IFE_Scaled, data = e_old)
+m4c3 <- lm(Total_Perf ~ FFA + FMB + FMA + FFB + MFA + MMB + MMA, data = e_old)
+```
+
+### Highly Educated Subgroup
+
+```{r}
+# create highly educated subset 
+e_edu <- subset(e1, f == 6 | f == 7)
+dim(e_edu)
+```
+
+```{r, results='asis'}
+# fit regression models
+m4d1 <- lm(Total_Scaled ~ FFA + FMB + FMA + FFB + MFA + MMB + MMA, data = e_edu)
+m4d2 <- lm(Total_Scaled ~ FFA + FMB + FMA + FFB + MFA + MMB + MMA + IFE_Scaled, data = e_edu)
+m4d3 <- lm(Total_Perf ~ FFA + FMB + FMA + FFB + MFA + MMB + MMA, data = e_edu)
+```
+
+### Native English Speaker Subgroup
+
+```{r}
+# create native English speaker subset 
+e_eng <- subset(e1, d == 1)
+dim(e_eng)
+```
+
+```{r, results='asis'}
+# fit regression models
+m4e1 <- lm(Total_Scaled ~ FFA + FMB + FMA + FFB + MFA + MMB + MMA, data = e_eng)
+m4e2 <- lm(Total_Scaled ~ FFA + FMB + FMA + FFB + MFA + MMB + MMA + IFE_Scaled, data = e_eng)
+m4e3 <- lm(Total_Perf ~ FFA + FMB + FMA + FFB + MFA + MMB + MMA, data = e_eng)
+```
+
+### Subgroup Results
+
+```{r, results='asis'}
+# output results
+reg_rse_5(m4a2, m4b2, m4c2, m4d2, m4e2, "Subgroup Analysis")
+```
+
+##Appendix B
+
+###B.1 | Exploratory Data Analysis: Scores
+
+
+```{r}
+EDA_Total_Scaled <- ggplot(e1, aes(x=as.factor(Total_Scaled), fill = ..count..)) + 
+  geom_bar(color = "black", position = "identity") +
+  scale_fill_gradient("Count",low = "white", high = "gray") +
+  labs(title = "Total Score", subtitle = "Phase I Subjects") + 
+  labs(x = "Total Score (Scaled to 100)", y = "Count") +
+  guides(fill=FALSE)
+  
+EDA_Total_Scaled
+
+ggsave(filename="EDA_Total_Scaled.png", plot=EDA_Total_Scaled, width = 7, height = 4, units = "in")
+```
+
+```{r}
+EDA_Recall_Scaled <- ggplot(e1, aes(x=as.factor(Recall_Scaled), fill = ..count..)) + 
+  geom_bar(color = "black", position = "identity") +
+  scale_fill_gradient("Count",low = "white", high = "gray") +
+  labs(title = "Recall Score", subtitle = "Phase I Subjects") + 
+  labs(x = "Recall Score (Scaled to 100)", y = "Count") +
+  guides(fill=FALSE)
+  
+EDA_Recall_Scaled
+
+ggsave(filename="EDA_Recall_Scaled.png", plot=EDA_Recall_Scaled, width = 7, height = 4, units = "in")
+```
+
+```{r}
+EDA_Comp_Scaled <- ggplot(e1, aes(x=as.factor(Comp_Scaled), fill = ..count..)) + 
+  geom_bar(color = "black", position = "identity") +
+  scale_fill_gradient("Count",low = "white", high = "gray") +
+  labs(title = "Comprehension Score", subtitle = "Phase I Subjects") + 
+  labs(x = "Comprehension Score (Scaled to 100)", y = "Count") +
+  guides(fill=FALSE)
+  
+EDA_Comp_Scaled
+
+ggsave(filename="EDA_Comp_Scaled.png", plot=EDA_Comp_Scaled, width = 7, height = 4, units = "in")
+```
+
+```{r}
+EDA_Ret_Scaled <- ggplot(e2, aes(x=as.factor(Ret_Scaled), fill = ..count..)) + 
+  geom_bar(color = "black", position = "identity") +
+  scale_fill_gradient("Count",low = "white", high = "gray") +
+  labs(title = "Retention Score", subtitle = "Phase II Subjects") + 
+  labs(x = "Retention Score (Scaled to 100)", y = "Count") +
+  guides(fill=FALSE)
+  
+EDA_Ret_Scaled
+
+ggsave(filename="EDA_Ret_Scaled.png", plot=EDA_Ret_Scaled, width = 7, height = 4, units = "in")
+```
+
+###B.2 | Exploratory Data Analysis: Covariates
+
+```{r}
+EDA_b <- ggplot(e1, aes(x=as.factor(b), fill = ..count..)) + 
+  geom_bar(color = "black", position = "identity") +
+  scale_fill_gradient("Count",low = "white", high = "gray") +
+  scale_x_discrete(labels = c("Under 21", "21-30", "31-40", "41-50", "Over 50")) +
+  labs(title = "Covariate: Subject Age", subtitle = "Phase I Subjects") + 
+  labs(x = "Age Group (Years)", y = "Count") +
+  guides(fill=FALSE)
+  
+EDA_b
+
+ggsave(filename="EDA_b.png", plot=EDA_b, width = 7, height = 4, units = "in")
+```
+
+```{r}
+EDA_c <- ggplot(e1, aes(x=as.factor(c), fill = ..count..)) + 
+  geom_bar(color = "black", position = "identity") +
+  scale_fill_gradient("Count",low = "white", high = "gray") +
+  scale_x_discrete(labels = c("White", "Black", "Asian", "Other", "Biracial")) +
+  labs(title = "Covariate: Subject Ethnicity", subtitle = "Phase I Subjects") + 
+  labs(x = "Ethnicity", y = "Count") +
+  guides(fill=FALSE)
+  
+EDA_c
+
+ggsave(filename="EDA_c.png", plot=EDA_c, width = 7, height = 4, units = "in")
+```
+
+```{r}
+EDA_d <- ggplot(e1, aes(x=as.factor(d), fill = ..count..)) + 
+  geom_bar(color = "black", position = "identity") +
+  scale_fill_gradient("Count",low = "white", high = "gray") +
+  scale_x_discrete(labels = c("First Language", "Second Language", "Third or More Language")) +
+  labs(title = "Covariate: Subject English Acquisition", subtitle = "Phase I Subjects") + 
+  labs(x = "English Acquisition", y = "Count") +
+  guides(fill=FALSE)
+  
+EDA_d
+
+ggsave(filename="EDA_d.png", plot=EDA_d, width = 7, height = 4, units = "in")
+```
+
+```{r}
+EDA_e <- ggplot(e1, aes(x=as.factor(e), fill = ..count..)) + 
+  geom_bar(color = "black", position = "identity") +
+  scale_fill_gradient("Count",low = "white", high = "gray") +
+  scale_x_discrete(labels = c("Yes", "No")) +
+  labs(title = "Covariate: Subject Student Status", subtitle = "Phase I Subjects") + 
+  labs(x = "Current Student", y = "Count") +
+  guides(fill=FALSE)
+  
+EDA_e
+
+ggsave(filename="EDA_e.png", plot=EDA_e, width = 7, height = 4, units = "in")
+```
+
+```{r}
+EDA_f <- ggplot(e1, aes(x=as.factor(f), fill = ..count..)) + 
+  geom_bar(color = "black", position = "identity") +
+  scale_fill_gradient("Count",low = "white", high = "gray") +
+  scale_x_discrete(labels = str_wrap(c("Less than high school", 
+                                       "High school graduate",
+                              "Some college", "4 year degree", 
+                              "Master or Professional degree", 
+                              "Doctorate"), width=10)) +
+  labs(title = "Covariate: Subject Education", subtitle = "Phase I Subjects") + 
+  labs(x = "Level of Education Completed", y = "Count") +
+  guides(fill=FALSE)
+  
+EDA_f
+
+ggsave(filename="EDA_f.png", plot=EDA_f, width = 7, height = 4, units = "in")
+```
+
+###B.3 | Experiment Design 1: Two-Group Model
+
+```{r, results='asis'}
+# fit regression models
+m2a1 <- lm(Total_Scaled ~ Same_Gen, data = e1)
+m2a2 <- lm(Total_Scaled ~ Same_Gen + IFE_Scaled, data = e1)
+
+# output results
+reg_rse_2(m2a1, m2a2, "Experiment Design 1: Two Groups")
+```
+
+
+###B.4 | Experiment Design 2: Four-Group Model
+
+```{r, results='asis'}
+# fit regression models
+m2c1 <- lm(Total_Scaled ~ FF + FM + MF, data = e1)
+m2c2 <- lm(Total_Scaled ~ FF + FM + MF + IFE_Scaled, data = e1)
+
+# output results
+reg_rse_2(m2c1, m2c2, "Experiment Design 2: Four Groups")
+```
+
+###3.2 | Subgroup Analyses
+
+### Student Subgroup
+
+```{r, results='asis'}
+# output results
+reg_rse_3(m4a1, m4a2, m4a3, "Subgroup Analysis: Students")
+```
+
+### Under 30 Subgroup
+
+```{r, results='asis'}
+# output results
+reg_rse_3(m4b1, m4b2, m4b3, "Subgroup Analysis: Under 30 Years Old")
+```
+
+### Over 30 Subgroup
+
+```{r, results='asis'}
+# output results
+reg_rse_3(m4c1, m4c2, m4c3, "Subgroup Analysis: Over 30 Years Old")
+```
+
+### Highly Educated Subgroup
+
+```{r, results='asis'}
+# output results
+reg_rse_3(m4d1, m4d2, m4d3, "Subgroup Analysis: Highly Educated")
+```
+
+
+### Native English Speaker Subgroup
+
+```{r, results='asis'}
+# output results
+reg_rse_3(m4e1, m4e2, m4e3, "Subgroup Analysis: Native English Speakers")
+```
+
+###Analysis: Video A vs. B
+
+```{r}
+#calculate group distributions
+VideoA_group <- e1[Video == 1, Total_Scaled, ]
+VideoB_group <- e1[Video == 2, Total_Scaled, ]
+```
+
+```{r}
+t.test(VideoA_group, VideoB_group, paired = TRUE, alternative = "two.sided")
+pwr.t.test(n=length(VideoA_group), d=effect(VideoA_group, VideoB_group), type = "paired")
+```
+
+###Analysis: Recall, Comprehension, and Retention
+
+```{r}
+#calculate group distributions
+Total_group <- e1[ , Total_Scaled, ]
+Recall_group <- e1[, Recall_Scaled, ]
+Comp_group <- e1[, Comp_Scaled, ]
+Ret_group <- e2[ , Ret_Scaled, ]
+```
+
+```{r}
+t.test(Recall_group, Total_group, paired = TRUE, alternative = "two.sided")
+pwr.t.test(n=length(Recall_group), d=effect(Recall_group, Total_group), type = "paired")
+```
+
+```{r}
+t.test(Comp_group, Total_group, paired = TRUE, alternative = "two.sided")
+pwr.t.test(n=length(Comp_group), d=effect(Comp_group, Total_group), type = "paired")
+```
+
+```{r}
+t.test(Ret_group, Total_group)
+pwr.t2n.test(n1=length(Ret_group), n2=length(Total_group), d=effect(Ret_group, Total_group))
+```
