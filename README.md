@@ -12,6 +12,6 @@ Coursework:
 - Fundamentals of Data Engineering (completed)
 - Applied Machine Learning (completed)
 - Experiments and Causal Inference (completed)
-- Machine Learning at Scale (in progress)
-- Natural Language Processing with Deep Learning (planned)
+- Machine Learning at Scale (completed)
+- Data Visualization (in progress)
 - Capstone Project (planned)
