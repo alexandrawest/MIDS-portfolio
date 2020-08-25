@@ -13,5 +13,5 @@ Coursework:
 - Applied Machine Learning (completed)
 - Experiments and Causal Inference (completed)
 - Machine Learning at Scale (completed)
-- **Data Visualization (in progress)**
-- Capstone Project (planned)
+- Data Visualization (completed)
+- **Capstone Project (in progress)**
