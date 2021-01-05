@@ -14,4 +14,4 @@ Coursework:
 - Experiments and Causal Inference (completed)
 - Machine Learning at Scale (completed)
 - Data Visualization (completed)
-- [Capstone Project] [https://people.ischool.berkeley.edu/~alexwest/w210_census_income_html/] (completed)
+- [Capstone Project](https://people.ischool.berkeley.edu/~alexwest/w210_census_income_html/) (completed)
